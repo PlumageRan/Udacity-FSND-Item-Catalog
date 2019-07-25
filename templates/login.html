@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>FSND Pokemon Catalog</title>
+
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+	<script src="//apis.google.com/js/platform.js?onload=start"> </script>
+
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/3.0.3/normalize.css">
+	<link rel="stylesheet" href="/static/milligram.min.css">
+	<link rel="stylesheet" href="/static/style.css">
+	<script src="//apis.google.com/js/platform.js?onload=init" async defer></script>
+
+	<meta name="google-signin-client_id"
+		content="{{ GOOGLE_CLIENT_ID }}">
+</head>
+<body>
+  <div class="container">
+    <!-- start Google Start Login -->
+    <h1>Sign with your Google Account</h1>
+    <div id="gbutton" ></div>
+    <script>
+      function init() {
+        if (window.Promise && window.fetch) {
+          console.log('Browser check passed. No polyfills needed.')
+          loadGoogleOAuth();
+        } else {
+          console.log('Browser check failed. Loading required polyfills.');
+          var js = document.createElement('script');
+          js.src = 'https://polyfill.io/v3/polyfill.min.js?features=Promise,fetch';
+
+          js.onload = function() {
+            loadGoogleOAuth();
+          };
+
+          js.onerror = function() {
+            console.error('Required polyfills FAILED to load.');
+            console.error('Google Sign in FAILED to load.');
+          };
+
+          document.head.appendChild(js);
+        }
+      }
+
+      function loadGoogleOAuth() {
+        gapi.load('auth2', function () {
+          gapi.signin2.render('gbutton', {
+            scope: 'email',
+            onsuccess: offlineAccess
+          });
+        });
+      }
+
+      function offlineAccess(googleUser) {
+        var profile = googleUser.getBasicProfile();
+        console.log("ID: " + profile.getId()); // Don't send this directly to your server!
+        console.log('Full Name: ' + profile.getName());
+        console.log('Given Name: ' + profile.getGivenName());
+        console.log('Family Name: ' + profile.getFamilyName());
+        console.log("Image URL: " + profile.getImageUrl());
+        console.log("Email: " + profile.getEmail());
+
+        // request offline access
+        gapi.auth2.getAuthInstance().grantOfflineAccess({ "prompt": "consent" }).then(function (resp) {
+          var auth_code = resp.code;
+          console.log(resp);
+          fetch("{{url_for('gconnect')}}?state={{state}}", {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/octet-stream; charset=utf-8'
+            },
+            body: auth_code
+          }).then(function(response) {
+            return response.text();
+          }).then(function(html) {
+            console.log(html);
+            document.body.innerHTML = html;
+            setTimeout(function() {
+              window.location.href = "{{url_for('showCategories')}}";
+            }, 3000);
+          }).catch(function(err){
+            console.error(err);
+          });
+        });
+      }
+    </script>
+    <!-- start Google End Login -->
+
+  </div>
+</body>
+</html>
